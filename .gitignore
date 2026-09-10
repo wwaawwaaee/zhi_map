@@ -1,0 +1,30 @@
+# Locally installed agent skills; installation source is in skills-lock.json.
+/.agents/skills/
+/.claude/skills/
+
+# Dependencies and generated output
+node_modules/
+coverage/
+*.log
+logs/
+log/
+
+# Browser test reports, screenshots and local profiles
+playwright-report/
+test-results/
+blob-report/
+.playwright/
+.cache/
+browser-profile/
+chrome-profile/
+zhijing-*.png
+
+# Local environment configuration
+.env
+.env.*
+!.env.example
+
+# OS and editor-local files
+.DS_Store
+Thumbs.db
+*.swp
