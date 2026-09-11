@@ -1,0 +1,12 @@
+import { z } from 'zod';
+export const idSchema = z.string().uuid();
+const revision = z.number().int().nonnegative();
+export const actionSchema = z.object({ type: z.enum(['create', 'sample', 'switch', 'draft', 'metadata', 'keep', 'fork', 'expand', 'resolveHistory', 'reference', 'removeReference', 'send', 'answer', 'retryToDraft', 'delete', 'restore']), branchId: idSchema.optional(), revision }).passthrough();
+export const workspaceSchema = z.object({ version: z.literal(2), sessions: z.array(z.object({ id: idSchema, title: z.string().min(1).max(120) })), branches: z.array(z.unknown()), active: idSchema.nullable() });
+export const importSchema = z.object({ schemaVersion: z.literal(2), state: workspaceSchema, revision }).superRefine((value, ctx) => { if (value.state.sessions.length > 500 || value.state.branches.length > 2000) ctx.addIssue({ code: 'custom', message: '导入数据超过限制。' }); });
+const text = (max: number) => z.string().min(1).max(max);
+export const chatSchema = z.object({ branchId: idSchema, revision });
+export const restoreSchema = z.object({ state: workspaceSchema, revision });
+export const metadataSchema = z.object({ branchId: idSchema, prompt: text(12000), answer: text(40000), labels: z.array(text(80)).max(100) });
+export const rerankSchema = z.object({ query: text(12000), candidates: z.array(z.object({ id: idSchema, title: text(160), summary: text(600) })).max(8) });
+export const aiConfigSchema = z.object({ baseUrl: z.string().min(1).max(2048), model: z.string().min(1).max(200), apiKey: z.string().max(4096), timeoutMs: z.number().int().min(100).max(600000).optional() });

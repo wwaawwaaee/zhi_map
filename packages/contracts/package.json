@@ -1,0 +1,1 @@
+{"name":"@zhijing/contracts","private":true,"type":"module","exports":"./src/index.ts","scripts":{"build":"tsc -p tsconfig.json"}}

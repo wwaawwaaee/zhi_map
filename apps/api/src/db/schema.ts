@@ -1,0 +1,5 @@
+import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+export const users = sqliteTable('users', { id: text('id').primaryKey(), createdAt: text('created_at').notNull() });
+export const sessions = sqliteTable('auth_sessions', { id: text('id').primaryKey(), userId: text('user_id').notNull().references(() => users.id), createdAt: text('created_at').notNull(), expiresAt: text('expires_at').notNull() });
+export const workspaces = sqliteTable('workspaces', { userId: text('user_id').primaryKey().references(() => users.id), state: text('state').notNull(), version: integer('version').notNull(), updatedAt: text('updated_at').notNull() });
+export const userAiConfigs = sqliteTable('user_ai_configs', { userId: text('user_id').primaryKey().references(() => users.id), version: integer('version').notNull(), baseUrl: text('base_url').notNull(), model: text('model').notNull(), timeoutMs: integer('timeout_ms').notNull(), encryptedKey: text('encrypted_key').notNull(), nonce: text('nonce').notNull(), authTag: text('auth_tag').notNull(), updatedAt: text('updated_at').notNull() });

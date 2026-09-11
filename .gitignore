@@ -4,6 +4,8 @@
 
 # Dependencies and generated output
 node_modules/
+dist/
+*.tsbuildinfo
 coverage/
 *.log
 logs/
@@ -23,6 +25,12 @@ zhijing-*.png
 .env
 .env.*
 !.env.example
+
+# Single-instance SQLite data
+data/
+*.db
+*.db-shm
+*.db-wal
 
 # OS and editor-local files
 .DS_Store

@@ -1,0 +1,5 @@
+import { z } from 'zod';
+const bool = z.enum(['true', 'false']).optional().transform((v) => v === 'true');
+const schema = z.object({ NODE_ENV: z.enum(['development', 'test', 'production']).default('development'), APP_ENV: z.enum(['development', 'test', 'production']).optional(), HOST: z.string().default('127.0.0.1'), PORT: z.coerce.number().int().min(1).max(65535).default(3000), DATABASE_URL: z.string().default('./data/zhijing.db'), APP_ORIGIN: z.string().url().optional(), SESSION_SECRET: z.string().min(32).default('development-only-secret-change-me-123456'), AI_BASE_URL: z.string().url().default('https://api.openai.com/v1'), AI_API_KEY: z.string().default(''), AI_MODEL: z.string().default(''), AI_TIMEOUT_MS: z.coerce.number().int().min(100).max(600000).default(60000), DATA_ENCRYPTION_KEY: z.string().optional(), AI_ALLOWED_HOSTS: z.string().optional(), LOG_LEVEL: z.string().default('info'), TRUST_PROXY: bool });
+export type Config = z.infer<typeof schema>;
+export const loadConfig = (env = process.env): Config => schema.parse(env);

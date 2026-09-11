@@ -1,0 +1,6 @@
+import { randomUUID } from 'node:crypto'; import type { FastifyRequest, FastifyReply } from 'fastify'; import type { SqliteDatabase } from '../db/client.js';
+export interface AuthService { requireUser(request: FastifyRequest, reply: FastifyReply): string; }
+export class LocalAuthService implements AuthService {
+  constructor(private readonly sqlite: SqliteDatabase, private readonly secure: boolean) {}
+  requireUser(request: FastifyRequest, reply: FastifyReply): string { const current = /(?:^|;\s*)zj_session=([^;]+)/.exec(request.headers.cookie ?? '')?.[1]; const now = new Date(); if (current) { const row = this.sqlite.prepare('SELECT user_id FROM auth_sessions WHERE id=? AND expires_at>?').get(current, now.toISOString()) as { user_id: string } | undefined; if (row) return row.user_id; } const userId = randomUUID(), sessionId = randomUUID(), expiry = new Date(now.getTime() + 30 * 86400000).toUTCString(); this.sqlite.transaction(() => { this.sqlite.prepare('INSERT INTO users VALUES (?,?)').run(userId, now.toISOString()); this.sqlite.prepare('INSERT INTO auth_sessions VALUES (?,?,?,?)').run(sessionId, userId, now.toISOString(), new Date(now.getTime() + 30 * 86400000).toISOString()); })(); reply.header('set-cookie', `zj_session=${sessionId}; Path=/; HttpOnly; SameSite=Lax; Expires=${expiry}${this.secure ? '; Secure' : ''}`); return userId; }
+}

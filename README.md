@@ -1,62 +1,50 @@
 # 知径
 
-知径是一款本地运行的 AI 学习工作台。阅读回答时，把不懂的片段展开为独立讨论，选择需要的背景，再按需引用旧主题，让追问有据可循，也能随时回到原文继续阅读。
+知径是面向学习讨论的单实例、自托管工作台。选区可精确展开为独立分支，背景默认截断到选区末尾；引用以快照保存，来源删除后仍可阅读。工作区由 API 和 SQLite 持久化，不以浏览器 `localStorage` 为数据源。
 
-## 主要流程
+## Requirements
 
-1. **开始学习**：新建问题，或打开首页人工编写的高中数学示例，从二次函数的配方法与顶点开始。
-2. **选中疑惑并展开**：框选同一条消息中的文字，填写问题。默认背景只到选区末尾，可逐条取消；即使取消全部背景，选区仍作为独立解释对象发送。公式或复杂排版可通过“选择原文”精确选取。
-3. **按需连接旧讨论**：在“相关主题”中浏览并确认要引用的消息或片段。引用保存为原文快照，不随来源变化；仅浏览候选不会加入回答背景。识别到结合历史的提问时，会先要求确认引用或选择不新增引用。
-4. **继续阅读与整理**：返回原文位置，查看当前上下文，编辑主题名称与标签，收藏讨论；在“设置与数据”中导出或导入 JSON 备份。
+Node.js 22.9+ and npm. SQLite is embedded through `better-sqlite3`; no Docker, Redis, or external database is required.
 
-回答支持 Markdown 与数学公式。接入模型后，新讨论首次回答完成时会请求生成标题和标签；相关主题先按本地标签匹配，也可手动请求模型对候选短摘要排序。
-
-## 安装与启动
-
-需要 **Node.js 22.9+**。
+## Run
 
 ```sh
 npm install
+cp .env.example .env
+npm run db:migrate
+npm run dev
+```
+
+Open `http://127.0.0.1:5173` in development. Build and run the self-hosted single process with:
+
+```sh
+npm run build
 npm start
 ```
 
-默认打开 <http://127.0.0.1:3000>。没有模型密钥时仍可离线浏览、展开、引用和整理记录；提交的问题会保留，但不会生成回答。离线使用仍需启动本地服务。
+Production serves `apps/web/dist` from Fastify at `HOST:PORT`. Set `NODE_ENV=production`, `APP_ORIGIN` when applicable, a persistent `DATABASE_URL`, and a real `SESSION_SECRET` before exposing it beyond localhost.
 
-### 模型配置
+## Configuration
 
-将根目录的 [`.env.example`](.env.example) 复制为 `.env`，填写配置后启动服务：
+`DATABASE_URL` defaults to `./data/zhijing.db`. Environment `AI_BASE_URL`, `AI_API_KEY`, `AI_MODEL`, and `AI_TIMEOUT_MS` are the server-wide fallback. Each anonymous session can instead configure an OpenAI-compatible base URL, model, API key, and optional timeout in Settings. The browser submits the key only through the same-origin API; it is never returned by GET APIs, put in browser storage, URLs, logs, or exports.
 
-| 变量 | 说明 |
-| --- | --- |
-| `HOST` | 监听地址，默认 `127.0.0.1` |
-| `PORT` | 端口，默认 `3000` |
-| `AI_BASE_URL` | OpenAI 兼容 API 根地址，默认 `https://api.openai.com/v1`；服务商要求 `/v1` 时应包含它 |
-| `AI_API_KEY` | 模型服务密钥 |
-| `AI_MODEL` | 服务商支持的模型名称；示例文件填写 `gpt-4o-mini`，请按实际服务修改 |
-| `AI_TIMEOUT_MS` | 请求超时毫秒数，默认 `60000` |
+Set `DATA_ENCRYPTION_KEY` in production before saving session model credentials. It must be a base64-encoded 32-byte key. Generate one with `npm run keys:generate`; on Windows PowerShell, use `$env:DATA_ENCRYPTION_KEY = npm run keys:generate --silent`, then persist the resulting value in the deployment secret store. Development generates one ephemeral process key and warns at startup, so saved credentials intentionally do not survive a restart. Clearing a session configuration requires confirmation and returns AI to the environment fallback (or offline mode). `AI_ALLOWED_HOSTS` can be a comma-separated exact hostname allowlist.
 
-服务端向 `AI_BASE_URL` 下的 `/chat/completions` 发送非流式请求。密钥由服务器读取并用于上游认证，不发送给浏览器；回答请求会将问题、选区与当前上下文发送给配置的模型服务。自动命名会发送首轮问答和已有标签，手动排序会发送查询与候选短摘要。
+User URLs must be absolute HTTP(S), cannot include URL credentials, are re-resolved before use, do not follow redirects, and reject localhost/private/link-local addresses. Production additionally requires HTTPS. Development and tests permit loopback only for local mock providers. This validation reduces SSRF risk but does not replace outbound firewall/egress controls against DNS rebinding in a hostile network.
 
-**修改环境配置后需停止服务并重新运行 `npm start`。** 页面显示“已配置”仅表示密钥与模型名已设置，实际连通性以请求结果为准。
+Anonymous users are created automatically and isolated through a server-side session. Export/import uses `{ schemaVersion: 2, state }`, validates size/schema, and replaces only the current user's workspace in a transaction; model configuration is never included. Legacy browser `localStorage` is intentionally not auto-migrated; a one-time JSON import can be added without changing the server model.
 
-## 测试
+## Verification
 
 ```sh
 npm test
+npm run typecheck
+npm run build
 npm run test:browser
 ```
 
-浏览器冒烟测试需要本机已安装 Chrome 或 Chromium，默认使用 Windows 的 `C:\Program Files\Google\Chrome\Application\chrome.exe`。其他路径可通过 `CHROME_PATH` 环境变量或命令参数指定：
+The browser smoke test needs Chrome at `CHROME_PATH` or the standard Windows Chrome path. It writes `test-results/browser-smoke.png`.
 
-```sh
-npm run test:browser -- "/path/to/chrome"
-```
+## Operational Scope
 
-测试自行启动本地服务并使用模拟上游，无需真实 API 密钥；截图默认写入系统临时目录。测试用于检查交互与接口行为，不代表真实模型回答质量已验证。
-
-## 使用局限
-
-- 学习记录保存在当前浏览器、当前站点的 `localStorage`，受浏览器容量限制。更换地址或端口会使用不同存储；清除站点数据会丢失记录。支持手动 JSON 备份，无账户、云同步或多标签并发编辑保护。
-- 历史意图识别使用本地规则，可能误判或漏判；相关主题候选依赖标签，不是全文语义检索，可手动浏览其他主题并引用。
-- 部分引用需填写原文范围；同一来源消息不能重复引用多个片段，需要移除后重选。删除来源会保留其他讨论中的快照，但无法再跳转回来源。
-- 当前适合个人本机使用，没有用户认证或多人权限管理。模型回答的准确性与学习效果尚未验证；首页数学示例是人工编写内容。
+This is a SQLite single-instance baseline. It has request IDs, structured Fastify logs, `/healthz`, `/readyz`, security headers, bounded request bodies, configurable CORS, secure production cookies, rate-limited AI routes, graceful signal shutdown, and sanitized upstream errors. It is not an HA SaaS deployment: it has no OIDC adapter yet, multi-node coordination, background job queue, replication, or managed backup service. See [architecture](docs/architecture.md) for boundaries and deployment assumptions.
