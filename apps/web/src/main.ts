@@ -15,7 +15,7 @@ const sourceKey = (entry: Entry) => `${entry.source.branchId}/${entry.source.mes
 
 function article(entry: Entry) {
   const source = entry.kind === 'reference' ? `<div class="source-label">引用快照 <button data-jump="${entry.source.branchId}" data-message="${entry.source.messageId}" data-start="${entry.range?.start ?? 0}" data-end="${entry.range?.end ?? entry.text.length}">查看原文</button><button data-remove="${entry.id}">移除</button></div>` : '';
-  return `<article class="message ${entry.role} ${entry.kind}" data-entry="${entry.id}" data-kind="${entry.kind}"><div class="message-head"><strong>${entry.role === 'user' ? '你' : '知径'}</strong><span>${entry.inherited ? '继承背景' : entry.kind === 'reference' ? '引用快照' : ''}</span></div><div class="message-text" data-source="${escapeHTML(entry.text)}">${renderMarkdown(entry.text)}</div>${entry.kind === 'message' && !entry.inherited ? '<div class="message-tools"><button data-raw>选择原文</button><button data-fork>从此继续</button></div>' : ''}${source}</article>`;
+  return `<article class="message ${entry.role} ${entry.kind}" data-entry="${entry.id}" data-kind="${entry.kind}"><div class="message-head"><strong>${entry.role === 'user' ? '你' : '知树'}</strong><span>${entry.inherited ? '继承背景' : entry.kind === 'reference' ? '引用快照' : ''}</span></div><div class="message-text" data-source="${escapeHTML(entry.text)}">${renderMarkdown(entry.text)}</div>${entry.kind === 'message' && !entry.inherited ? '<div class="message-tools"><button data-raw>选择原文</button><button data-fork>从此继续</button></div>' : ''}${source}</article>`;
 }
 function renderTree() {
   const tags = [...new Set(app.state.branches.flatMap((branch) => branch.tags))].sort();

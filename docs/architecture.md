@@ -1,15 +1,29 @@
-# Architecture
+# Zhishu Architecture
 
-## Boundaries
+## Module Boundaries
 
-`apps/web` is a Vite TypeScript client. It renders server snapshots and sends validated commands; it does not own durable learning data or model credentials. `packages/domain` contains the deterministic learning state transitions and snapshot rules. `packages/contracts` owns HTTP payload schemas. `apps/api` contains Fastify routes, services, repositories, and SQLite access.
+The web client renders workspace snapshots and sends commands. It does not decide durable state transitions, store learning data, or retain model credentials. See the [web client](../apps/web/README.md).
 
-## Components and Data
+The domain package owns deterministic state types, transitions, and validation. It has no HTTP, database, or browser dependency. See the [domain model](../packages/domain/README.md).
 
-First use creates an anonymous user and an HttpOnly, `SameSite=Lax` session cookie. A workspace snapshot is stored per user in SQLite. Writes use an SQLite transaction and update the snapshot version and timestamp. Branches retain copied inherited context and reference snapshots, so a deleted source does not invalidate existing learning records.
+The contracts package owns Zod schemas at the HTTP boundary. It does not implement routes or domain behavior. See the [HTTP contracts](../packages/contracts/README.md).
 
-The AI gateway is OpenAI-compatible and only exists server-side. Per-session configuration is stored in `user_ai_configs`; API keys are AES-256-GCM encrypted with `DATA_ENCRYPTION_KEY`, using user ID and configuration version as authenticated associated data. Read APIs expose only configured state, base URL, model, timeout, timestamp, and source. AI calls resolve session configuration first, then environment fallback. The gateway does not follow redirects, revalidates configured hosts before calls, uses an abortable timeout, caps inputs through route schemas/body limits, and returns sanitized errors. An `AuthService` interface isolates the local anonymous implementation from a future OIDC adapter.
+The API service authenticates the local anonymous session, validates requests, invokes domain transitions, persists snapshots, and is the only component that talks to SQLite and model providers. See the [API service](../apps/api/README.md).
+
+## Data Flow
+
+1. A first request creates an anonymous user and an HttpOnly, `SameSite=Lax` session cookie.
+2. The client reads a workspace snapshot and revision, then sends commands with that revision.
+3. The API validates the HTTP payload, applies the domain transition, and atomically replaces the user's SQLite snapshot. A stale revision is rejected as a conflict.
+4. An AI request reads the current branch, resolves the session model configuration before the environment fallback, calls the provider server-side, then persists the resulting domain action.
+5. Export/import transfers `{ schemaVersion: 2, state }` for only the current user's workspace; model configuration is excluded.
+
+Branches copy inherited context and references are stored as snapshots. Deleting an original source therefore does not invalidate an existing branch or reference.
 
 ## Deployment Assumptions
 
-This is a single-process, single-instance local or self-hosted deployment. SQLite WAL is appropriate for this baseline, not horizontally scaled application nodes or shared network filesystems. Run migrations before the API, persist `DATABASE_URL` storage, set `APP_ORIGIN` for cross-origin web hosting, and use HTTPS with `NODE_ENV=production` so cookies are secure. Back up the SQLite database. This architecture does not claim HA, multi-region replication, or distributed locking.
+Zhishu is a single-process, single-instance service. SQLite WAL requires durable local storage and is not a shared filesystem or horizontally scaled-node solution. Run `npm run db:migrate` before starting the API, back up `DATABASE_URL`, and use HTTPS with `NODE_ENV=production` for secure cookies. Configure `APP_ORIGIN` only when serving the client from another origin.
+
+The AI gateway is server-side. Session keys are AES-256-GCM encrypted when `DATA_ENCRYPTION_KEY` is configured; production refuses to save session keys without it. Provider URLs are validated, re-resolved before use, and never followed through redirects. These controls complement, rather than replace, outbound network controls.
+
+Operational coverage is intentionally limited: there is no high availability, multi-node coordination, replication, managed backup service, or active OIDC adapter. Test responsibilities are documented in the [test suite](../tests/README.md).
