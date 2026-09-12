@@ -1,6 +1,6 @@
 # 知树 Windows Desktop
 
-这是 Windows 10/11 的可分发桌面版。开发者在仓库根目录准备好 Node.js、npm 和 Python 3.13+ 后，运行：
+这是 Windows 10/11 的可分发桌面版。开发者在仓库根目录准备好 Node.js、npm 和 Python 3.12+ 后，运行：
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File desktop\build.ps1

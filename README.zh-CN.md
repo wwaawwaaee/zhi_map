@@ -6,7 +6,7 @@
 
 ## 开始使用
 
-需要 Node.js 22.9+、npm 与 Python 3.13+。项目内置 SQLite，无需 Docker 或外部数据库。
+需要 Node.js 22.12+（或 24 LTS）、npm 与 Python 3.12+。项目内置 SQLite，无需 Docker 或外部数据库。
 
 先安装依赖，并创建本地环境文件：
 

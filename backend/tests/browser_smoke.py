@@ -41,7 +41,7 @@ def main() -> None:
     if not shutil.which("node"):
         raise RuntimeError("Node.js is required for the Playwright browser driver")
     port = free_port()
-    with tempfile.TemporaryDirectory(prefix="zhishu-browser-") as directory:
+    with tempfile.TemporaryDirectory(prefix="zhishu-browser-", ignore_cleanup_errors=True) as directory:
         database = Path(directory) / "smoke.db"
         environment = os.environ | {
             "DATABASE_URL": f"sqlite:///{database.as_posix()}",

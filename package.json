@@ -3,7 +3,7 @@
   "version": "2.0.0",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=22.9.0" },
+  "engines": { "node": ">=22.12.0" },
   "scripts": {
     "dev": "npm run dev:web",
     "dev:web": "vite --config apps/web/vite.config.ts",

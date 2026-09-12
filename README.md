@@ -6,7 +6,7 @@ Zhishu is a self-hosted learning workspace for branching a discussion from an ex
 
 ## Quick Start
 
-Requires Node.js 22.9+, npm, and Python 3.13+. SQLite is embedded; Docker and an external database are not required.
+Requires Node.js 22.12+ (or 24 LTS), npm, and Python 3.12+. SQLite is embedded; Docker and an external database are not required.
 
 ```sh
 npm install

@@ -110,7 +110,7 @@ def transition(state: dict, action: dict):
     elif kind=="delete":
         target=action.get("targetId")
         if action.get("kind")=="session":
-            session=next((x for x in next["sessions"] if x["id"]==target),None)
+            session=[x for x in next["sessions"] if x["id"]==target]; session=session[0] if session else None
             if not session: fail("会话已不存在。")
             roots=[x["id"] for x in next["branches"] if x["sessionId"]==target and not x["parent"]]; children=[x for x in next["branches"] if x["sessionId"]==target and x["parent"]]; next["branches"]=[x for x in next["branches"] if x["id"] not in roots]; next["sessions"]=[x for x in next["sessions"] if x["id"]!=target]
             if children:

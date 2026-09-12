@@ -1,12 +1,12 @@
 [project]
 name = "zhishu-backend"
 version = "2.0.0"
-requires-python = ">=3.13"
-dependencies = ["fastapi>=0.115", "uvicorn[standard]>=0.32", "pydantic>=2.10", "pydantic-settings>=2.7", "SQLAlchemy>=2.0", "alembic>=1.14", "httpx>=0.28", "cryptography>=44"]
+requires-python = ">=3.12"
+dependencies = ["fastapi>=0.115", "uvicorn[standard]>=0.30", "pydantic>=2.9", "pydantic-settings>=2.4", "SQLAlchemy>=2.0", "alembic>=1.13", "httpx>=0.27", "cryptography>=43"]
 
 [project.optional-dependencies]
-test = ["pytest>=8.3", "pytest-asyncio>=0.24"]
-desktop = ["pywebview>=5.3", "pyinstaller>=6.11", "pywin32>=308; sys_platform == 'win32'"]
+test = ["pytest>=8"]
+desktop = ["pywebview>=6.2", "pyinstaller>=6.11", "pywin32>=306; sys_platform == 'win32'"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]

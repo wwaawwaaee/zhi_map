@@ -1,6 +1,6 @@
 # 知树 Python Backend
 
-Python 3.13 FastAPI application. The domain transitions, validation, persistence, AI gateway, encryption, and session authentication run here; TypeScript is presentation-only.
+Python 3.12+ FastAPI application. The domain transitions, validation, persistence, AI gateway, encryption, and session authentication run here; TypeScript is presentation-only.
 
 ```cmd
 py -m venv .venv
