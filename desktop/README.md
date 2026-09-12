@@ -1,12 +1,38 @@
 # 知树 Windows Desktop
 
-这是 Windows 10/11 的可分发桌面版。开发者在仓库根目录准备好 Node.js、npm 和 Python 3.12+ 后，运行：
+这是 Windows 10/11 的可分发桌面版。开发者在仓库根目录准备好 Node.js、npm、Python 3.12+ 与 [Inno Setup](https://jrsoftware.org/isdl.php) 6.3+ 后，运行：
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File desktop\build.ps1
 ```
 
-构建脚本会构建 Web 客户端、安装桌面依赖并生成 PyInstaller `onedir` 发布目录；任一步返回非零退出码立即停止。发送给用户的完整包是 **`desktop\dist\Zhishu-windows-x64.zip`**，顶层为 `Zhishu` 文件夹。解压后运行 `Zhishu\Zhishu.exe`，保留 `_internal` 全部内容。另生成带版本和 UTC 构建时间的唯一文件名 `Zhishu-<build_id>-windows-x64.zip`、各 ZIP 的 `.sha256` 及逐文件哈希清单，便于确认双方使用同一个包。
+只想要便携 ZIP、不装 Inno Setup 时加 `-SkipInstaller`。
+
+构建脚本会构建 Web 客户端、安装桌面依赖、生成 PyInstaller `onedir` 发布目录，最后编译安装包；任一步返回非零退出码立即停止。产物都在 `desktop\dist\`。
+
+## 分发给用户的两种形式
+
+**安装包（推荐）**：`Zhishu-Setup-windows-x64.exe`，用户双击一次即可，不需要解压或手动装运行时。
+
+- 按用户安装到 `%LOCALAPPDATA%\Programs\Zhishu`，不要求管理员权限、不弹 UAC
+- 创建开始菜单快捷方式；桌面快捷方式在向导里勾选
+- 检测到缺少 WebView2 Runtime 时，先静默安装运行时**再**复制程序文件。引导程序在构建时从 `go.microsoft.com` 下载并缓存到 `desktop\build\`，构建时校验其 Authenticode 签名；安装过程本身不需要联网
+- 版本号取自 `backend/pyproject.toml`，升级时原地覆盖，`AppId` 固定不变
+- 卸载**不会**删除 `%LOCALAPPDATA%\Zhishu` 里的数据，并在结束时提示该目录位置。安装和卸载都不写入用户数据目录
+
+抓取 WebView2 引导程序是**尽力而为**的，不是构建的硬依赖：微软的投递 CDN（`msedge.sf.dl.delivery.mp.microsoft.com`）在部分网络下不可达——2026-09-12 在本机实测被代理规则拦断（两个域名都解析到 `198.18.0.x` 的 fake-IP 段，第二个 TLS 连接被直接切断）。取不到时构建照常成功，只是产出一个**不含运行时**的安装包，安装时会提示用户自己去下载。想让安装包内置运行时，把 `MicrosoftEdgeWebview2Setup.exe` 手动放到 `desktop\build\` 即可，构建会校验文件名对应的签名后使用它。
+
+`Zhishu-Setup-<build_id>-windows-x64.exe` 是带版本和 UTC 构建时间的唯一文件，另生成各安装包的 `.sha256`、同构建的 `.manifest.json`，以及逐文件哈希清单的 ZIP 版本，便于确认双方使用同一个包。
+
+**便携 ZIP**：`Zhishu-windows-x64.zip`，顶层为 `Zhishu` 文件夹。解压后运行 `Zhishu\Zhishu.exe`，保留 `_internal` 全部内容。
+
+## 构建注意事项
+
+安装包目前**未做代码签名**，用户首次运行会遇到 SmartScreen 的“未知发布者”提示。签名是消除该提示与 Defender 误报的唯一办法。
+
+向导默认是英文：Inno Setup 不自带简体中文，把第三方 `ChineseSimplified.isl` 放进 Inno Setup 安装目录的 `Languages\` 后，构建脚本会自动改用中文，缺失时给出警告。放一个 `desktop\zhishu.ico` 并取消 [installer.iss](installer.iss) 中 `SetupIconFile` 那行的注释即可设置图标。
+
+## 运行时行为
 
 用户无需 Python、Node.js 或单独启动服务。需要 x64 Windows、.NET Framework 4.6.2 或更新版本和 Microsoft Edge WebView2 Runtime；缺失时请安装 [WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/)。包内包含 Python、pythonnet、CLR loader 与 WebView2 桥接 DLL，系统运行时不随包分发。
 

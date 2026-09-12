@@ -58,8 +58,22 @@ def package():
     print(json.dumps({'zip': str(destination), 'alias': str(alias), 'sha256': digest, 'file_count': len(files)}, indent=2))
 
 
+def installer():
+    info = json.loads((DESKTOP / 'build-info.json').read_text(encoding='utf-8'))
+    source = DESKTOP / 'dist' / f"Zhishu-Setup-{info['build_id']}-windows-x64.exe"
+    if not source.is_file():
+        raise RuntimeError(f'Missing installer: {source}')
+    alias = source.parent / 'Zhishu-Setup-windows-x64.exe'
+    shutil.copyfile(source, alias)
+    digest = hashlib.sha256(source.read_bytes()).hexdigest()
+    for path in (source, alias):
+        path.with_suffix('.exe.sha256').write_text(f'{digest}  {path.name}\n', encoding='ascii')
+    source.with_suffix('.manifest.json').write_text(json.dumps({'build': info, 'sha256': digest, 'bytes': source.stat().st_size}, indent=2), encoding='utf-8')
+    print(json.dumps({'installer': str(source), 'alias': str(alias), 'sha256': digest, 'bytes': source.stat().st_size}, indent=2))
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('action', choices=['prepare', 'package'])
+    parser.add_argument('action', choices=['prepare', 'package', 'installer'])
     args = parser.parse_args()
-    prepare() if args.action == 'prepare' else package()
+    {'prepare': prepare, 'package': package, 'installer': installer}[args.action]()

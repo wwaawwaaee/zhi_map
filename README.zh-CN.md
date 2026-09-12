@@ -55,7 +55,12 @@ py -m uvicorn app.main:app --app-dir backend --host 0.0.0.0 --port 8000
 
 ## Windows 桌面版
 
-构建完成后的实际程序是 `desktop\dist\Zhishu\Zhishu.exe`，它是一个文件夹发布包的一部分。请分发整个 `desktop\dist\Zhishu` 文件夹，用户解压后运行其中的 `Zhishu.exe`；不要只复制 exe，也不要在未构建的仓库中直接双击启动器。程序需要 Microsoft Edge WebView2 Runtime，Windows 10/11 通常已安装。
+在 Windows 上运行 `desktop\build.ps1` 会产出两种可分发形式，都在 `desktop\dist\`：
+
+- **`Zhishu-Setup-windows-x64.exe`**（推荐）——用户双击安装，自动处理 WebView2 Runtime 和快捷方式，按用户安装、不需要管理员权限
+- **`Zhishu-windows-x64.zip`**——便携版，解压后运行 `Zhishu\Zhishu.exe`，需要保留 `_internal` 整个文件夹
+
+两种形式都自带 Python 与全部依赖，用户无需安装 Python、Node.js 或单独启动服务。数据统一存在 `%LOCALAPPDATA%\Zhishu`，卸载不会删除它。程序需要 x64 Windows 10/11；安装包会在缺少 Microsoft Edge WebView2 Runtime 时自动安装。构建细节与已知限制（尚未代码签名、向导语言）见 [桌面宿主文档](desktop/README.md)。
 
 ## 验证
 
