@@ -1,4 +1,4 @@
-import type { Branch, Entry, Selection, State } from '@zhijing/domain';
+import type { Branch, Entry, Selection, State } from './types.js';
 import './style.css';
 import { api } from './api.js';
 import { WorkspaceController } from './controller.js';
@@ -83,4 +83,5 @@ $('#messages').addEventListener('pointerup', () => { try { picked = readSelectio
 $('#expand-selection').onclick = () => { if (picked) openExpand(picked); }; $('#undo').onclick = () => { if (undo) { void app.undo(undo); undo = null; render(); } };
 $('#nav-toggle').onclick = () => { document.body.classList.toggle('nav-open'); $('#nav-toggle').setAttribute('aria-expanded', String(document.body.classList.contains('nav-open'))); };
 document.addEventListener('change', async (event) => { const input = event.target as HTMLInputElement; if (input.id === 'import-file' && input.files?.[0]) try { const snapshot = await api.import(JSON.parse(await input.files[0].text()), app.revision); app.state = snapshot.state; app.revision = snapshot.revision; ($('#modal') as HTMLDialogElement).close(); render(); } catch (error) { $('#modal-error').textContent = `导入失败：${(error as Error).message}`; } });
-Promise.all([app.load(), api.status()]).then(([, status]) => { $('#connection').textContent = status.mode === 'configured' ? `${status.model} 已配置` : '离线模式'; }).catch((error) => notify((error as Error).message));
+// Establish the session cookie before issuing another identity-bearing request.
+app.load().then(() => api.status()).then((status) => { $('#connection').textContent = status.mode === 'configured' ? `${status.model} 已配置` : '离线模式'; }).catch((error) => notify((error as Error).message));

@@ -1,4 +1,4 @@
-import type { State } from '@zhijing/domain';
+import type { State } from './types.js';
 
 export type Snapshot = { state: State; revision: number };
 export type AiConfig = { configured: boolean; baseUrl: string | null; model: string | null; timeoutMs: number | null; updatedAt: string | null; source: 'user' | 'environment' | 'none' };

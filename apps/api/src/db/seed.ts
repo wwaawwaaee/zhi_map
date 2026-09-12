@@ -1,2 +1,0 @@
-import { randomUUID } from 'node:crypto'; import { seedState } from '@zhijing/domain'; import { loadConfig } from '../config.js'; import { openDatabase } from './client.js';
-const { sqlite } = openDatabase(loadConfig().DATABASE_URL); const userId = randomUUID(); const now = new Date().toISOString(); sqlite.prepare('INSERT INTO users VALUES (?, ?)').run(userId, now); sqlite.prepare('INSERT INTO workspaces VALUES (?, ?, 2, ?)').run(userId, JSON.stringify(seedState()), now); sqlite.close(); console.log(`Seeded high-school mathematics workspace for ${userId}`);

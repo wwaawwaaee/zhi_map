@@ -28,6 +28,11 @@ zhijing-*.png
 
 # Single-instance SQLite data
 data/
+backend/.venv/
+**/__pycache__/
+*.py[cod]
+desktop/build/
+desktop/dist/
 *.db
 *.db-shm
 *.db-wal

@@ -1,0 +1,19 @@
+Metadata-Version: 2.4
+Name: zhishu-backend
+Version: 2.0.0
+Requires-Python: >=3.13
+Requires-Dist: fastapi>=0.115
+Requires-Dist: uvicorn[standard]>=0.32
+Requires-Dist: pydantic>=2.10
+Requires-Dist: pydantic-settings>=2.7
+Requires-Dist: SQLAlchemy>=2.0
+Requires-Dist: alembic>=1.14
+Requires-Dist: httpx>=0.28
+Requires-Dist: cryptography>=44
+Provides-Extra: test
+Requires-Dist: pytest>=8.3; extra == "test"
+Requires-Dist: pytest-asyncio>=0.24; extra == "test"
+Provides-Extra: desktop
+Requires-Dist: pywebview>=5.3; extra == "desktop"
+Requires-Dist: pyinstaller>=6.11; extra == "desktop"
+Requires-Dist: pywin32>=308; sys_platform == "win32" and extra == "desktop"

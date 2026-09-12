@@ -1,4 +1,6 @@
-# Zhishu Web Client
+# 知树 Web Client
+
+Vite TypeScript renders and interacts with snapshots from the Python FastAPI service. It contains view types only: no persistence, credentials, or domain transitions. `npm run dev:web` proxies API traffic to `http://127.0.0.1:8000`.
 
 ## Frontend Architecture
 
@@ -6,7 +8,7 @@
 
 ## Development Entry
 
-Run `npm run dev:web` from the repository root and open `http://127.0.0.1:5173`. Vite proxies `/api`, `/healthz`, and `/readyz` to `http://127.0.0.1:3000`; start the API separately with `npm run dev:api` or use `npm run dev` for both. Build with `npm run build`.
+Run `npm run dev:web` from the repository root and open `http://127.0.0.1:5173`. Vite proxies `/api`, `/healthz`, and `/readyz` to the FastAPI server at `http://127.0.0.1:8000`; start it with `py -m uvicorn app.main:app --app-dir backend --reload --port 8000`. Build with `npm run build`.
 
 ## User Interaction
 
@@ -14,4 +16,4 @@ The client lets a learner create and organize topics, send prompts, expand an ex
 
 ## Data and API Dependency
 
-The client owns only its rendered, in-memory workspace snapshot and active request state. It does not persist learning data, session credentials, or authoritative revisions in browser storage. Every workspace mutation, import/export operation, model setting, and model request depends on the API's same-origin endpoints. HTTP payload rules are defined by [contracts](../../packages/contracts/README.md), and state semantics are defined by [domain](../../packages/domain/README.md).
+The client owns only its rendered, in-memory workspace snapshot and active request state. It does not persist learning data, session credentials, or authoritative revisions in browser storage. Every workspace mutation, import/export operation, model setting, and model request depends on FastAPI. Python Pydantic models validate HTTP payloads and `backend/app/domain` defines state semantics.

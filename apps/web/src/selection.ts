@@ -1,4 +1,4 @@
-import type { Selection } from '@zhijing/domain';
+import type { Selection } from './types.js';
 
 export function readSelection(selection: globalThis.Selection, container: Element): Selection {
   if (selection.isCollapsed || selection.rangeCount !== 1) throw new Error('请先在一条消息正文中选择文字。');

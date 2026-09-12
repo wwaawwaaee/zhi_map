@@ -1,4 +1,4 @@
-import type { Action, Branch, State } from '@zhijing/domain';
+import type { Action, Branch, State } from './types.js';
 import { api, ConflictError } from './api.js';
 
 export class WorkspaceController {

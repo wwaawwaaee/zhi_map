@@ -4,11 +4,9 @@
 
 The web client renders workspace snapshots and sends commands. It does not decide durable state transitions, store learning data, or retain model credentials. See the [web client](../apps/web/README.md).
 
-The domain package owns deterministic state types, transitions, and validation. It has no HTTP, database, or browser dependency. See the [domain model](../packages/domain/README.md).
+`backend/app/domain` owns deterministic state transitions, validation, and JavaScript-compatible UTF-16 offsets. It has no HTTP, database, or browser dependency.
 
-The contracts package owns Zod schemas at the HTTP boundary. It does not implement routes or domain behavior. See the [HTTP contracts](../packages/contracts/README.md).
-
-The API service authenticates the local anonymous session, validates requests, invokes domain transitions, persists snapshots, and is the only component that talks to SQLite and model providers. See the [API service](../apps/api/README.md).
+FastAPI Pydantic models own the HTTP boundary. The Python API authenticates the local anonymous session, validates requests, invokes domain transitions, persists snapshots, and is the only component that talks to SQLite and model providers. See the [backend](../backend/README.md).
 
 ## Data Flow
 
@@ -22,8 +20,8 @@ Branches copy inherited context and references are stored as snapshots. Deleting
 
 ## Deployment Assumptions
 
-Zhishu is a single-process, single-instance service. SQLite WAL requires durable local storage and is not a shared filesystem or horizontally scaled-node solution. Run `npm run db:migrate` before starting the API, back up `DATABASE_URL`, and use HTTPS with `NODE_ENV=production` for secure cookies. Configure `APP_ORIGIN` only when serving the client from another origin.
+Zhishu is a single-process, single-instance service. SQLite requires durable local storage and is not a shared filesystem or horizontally scaled solution. Run `alembic upgrade head` before starting the API, back up `DATABASE_URL`, and use HTTPS with `APP_ENV=production` for secure cookies.
 
 The AI gateway is server-side. Session keys are AES-256-GCM encrypted when `DATA_ENCRYPTION_KEY` is configured; production refuses to save session keys without it. Provider URLs are validated, re-resolved before use, and never followed through redirects. These controls complement, rather than replace, outbound network controls.
 
-Operational coverage is intentionally limited: there is no high availability, multi-node coordination, replication, managed backup service, or active OIDC adapter. Test responsibilities are documented in the [test suite](../tests/README.md).
+Operational coverage is intentionally limited: there is no high availability, multi-node coordination, replication, managed backup service, or active OIDC adapter. Run `py -m pytest backend/tests -q` and `npm run test:browser` for backend and browser coverage.

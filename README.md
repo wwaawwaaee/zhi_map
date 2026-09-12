@@ -6,10 +6,11 @@ Zhishu is a self-hosted learning workspace for branching a discussion from an ex
 
 ## Quick Start
 
-Requires Node.js 22.9+ and npm. SQLite is embedded; Docker and an external database are not required.
+Requires Node.js 22.9+, npm, and Python 3.13+. SQLite is embedded; Docker and an external database are not required.
 
 ```sh
 npm install
+py -m pip install -e "backend[test]"
 ```
 
 Create the local environment file:
@@ -22,23 +23,25 @@ copy .env.example .env
 cp .env.example .env
 ```
 
-Then initialize the database and start both development servers:
+Then initialize the database, start FastAPI in one terminal, and start Vite in another:
 
 ```sh
-npm run db:migrate
-npm run dev
+py -m alembic -c backend/alembic.ini upgrade head
+py -m uvicorn app.main:app --app-dir backend --reload --port 8000
+npm run dev:web
 ```
 
-Open `http://127.0.0.1:5173`. The API listens on port `3000` and the Vite server proxies its API requests to it.
+Open `http://127.0.0.1:5173`. FastAPI listens on port `8000`; Vite proxies API requests to it.
 
-For a self-hosted production process:
+For a self-hosted production process, build the web client, migrate, then serve FastAPI:
 
 ```sh
 npm run build
-npm start
+py -m alembic -c backend/alembic.ini upgrade head
+py -m uvicorn app.main:app --app-dir backend --host 0.0.0.0 --port 8000
 ```
 
-Set `NODE_ENV=production`, a persistent `DATABASE_URL`, and a strong `SESSION_SECRET` before exposing the service. Set `APP_ORIGIN` when the web client is hosted on another origin.
+Set `APP_ENV=production`, a persistent `DATABASE_URL`, and `DATA_ENCRYPTION_KEY` before exposing the service.
 
 ## Configure a Model
 
@@ -55,13 +58,11 @@ npm run build
 npm run test:browser
 ```
 
-The browser smoke test uses `CHROME_PATH` or the standard Windows Chrome location and writes `test-results/browser-smoke.png`.
+The browser smoke test builds the client, starts FastAPI with a temporary SQLite database, and uses Chrome through the installed `playwright-core`. Install Chrome, or set `CHROME_PATH` to a Chrome/Chromium executable. It writes `test-results/browser-smoke.png`.
 
 ## Documentation
 
 - [Architecture](docs/architecture.md)
-- [API service](apps/api/README.md)
+- [Python backend](backend/README.md)
 - [Web client](apps/web/README.md)
-- [Domain model](packages/domain/README.md)
-- [HTTP contracts](packages/contracts/README.md)
-- [Test suite](tests/README.md)
+- [Windows desktop host](desktop/README.md)
