@@ -26,6 +26,26 @@ powershell -ExecutionPolicy Bypass -File desktop\build.ps1
 
 **便携 ZIP**：`Zhishu-windows-x64.zip`，顶层为 `Zhishu` 文件夹。解压后运行 `Zhishu\Zhishu.exe`，保留 `_internal` 全部内容。
 
+## 发布后续版本
+
+版本号只有一个来源：`backend/pyproject.toml` 的 `project.version`。`release.py prepare` 读它写出 `build-info.json`，加上 UTC 时间戳组成 `build_id`，再由 `build.ps1` 作为编译期定义传给 [installer.iss](installer.iss)——`AppVersion`、卸载项里的 `DisplayVersion`、`VersionInfoTextVersion` 和产物文件名都来自这两个值。
+
+1. 改 `backend/pyproject.toml` 的 `version`。**不要动** [installer.iss](installer.iss) 里的 `AppId`：它是升级关系的唯一依据，改了会让新版本与旧版本并存，而不是原地覆盖。
+2. 在仓库根目录执行 `powershell -ExecutionPolicy Bypass -File desktop\build.ps1`。
+3. 分发 `desktop\dist\Zhishu-Setup-windows-x64.exe` 和它的 `.sha256`。它与带 `build_id` 的那份逐字节相同，只是文件名固定。
+
+JS 依赖有变动时先跑 `npm install`——`build.ps1` 只跑 `npm run build:web`，自己不会装依赖。`py` 必须是标准布局的 CPython（python.org 或 uv）；conda 版会把 `sqlite3.dll` 放在 `Library\bin`，PyInstaller 收集不到，产出的 EXE 启动即崩。
+
+构建时的两条警告（缺 `ChineseSimplified.isl`、取不到 WebView2 引导程序）都是设计好的降级路径，不是错误，处置办法见下方「构建注意事项」。
+
+发布前至少确认：
+
+- `py -m pytest desktop/tests -q` 全绿
+- 静默安装（`Zhishu-Setup-*.exe /SILENT`）后，安装目录与 `desktop\dist\Zhishu` 逐文件哈希一致——PyInstaller 漏收依赖只有启动时才会暴露，这一步能提前挡住
+- 启动装好的 `Zhishu.exe`，能出窗口并加载页面
+- 卸载后 `%LOCALAPPDATA%\Zhishu` 一个文件都没少
+- `py desktop\tests\packaged_smoke.py --parent <已存在的临时目录> --zip desktop\dist\Zhishu-windows-x64.zip`。若所在网络把域名解析进 `198.18.0.0/15`（fake-IP 代理），脚本会停在保存模型配置那一步并报 400：后端 `valid_url()` 会把这类地址判为私网。属环境问题，与发布包无关
+
 ## 构建注意事项
 
 安装包目前**未做代码签名**，用户首次运行会遇到 SmartScreen 的“未知发布者”提示。签名是消除该提示与 Defender 误报的唯一办法。
