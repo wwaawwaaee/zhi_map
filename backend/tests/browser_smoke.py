@@ -47,9 +47,12 @@ def main() -> None:
             "DATABASE_URL": f"sqlite:///{database.as_posix()}",
             "WEB_DIST": str(ROOT / "apps" / "web" / "dist"),
             "APP_ENV": "test",
+            "AI_ALLOW_PRIVATE_HOSTS": "true",
+            "AI_API_KEY": "",
+            "AI_MODEL": "",
         }
         server = subprocess.Popen(
-            [sys.executable, "-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", str(port)],
+            [sys.executable, "-m", "uvicorn", "tests.mock_app:app", "--host", "127.0.0.1", "--port", str(port)],
             cwd=BACKEND,
             env=environment,
         )

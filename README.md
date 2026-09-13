@@ -45,7 +45,9 @@ Set `APP_ENV=production`, a persistent `DATABASE_URL`, and `DATA_ENCRYPTION_KEY`
 
 ## Configure a Model
 
-Set `AI_BASE_URL`, `AI_API_KEY`, `AI_MODEL`, and optionally `AI_TIMEOUT_MS` in `.env` for the server fallback, or configure an OpenAI-compatible provider in the Settings UI for the current anonymous session. Session keys are submitted only to the same-origin API and are not returned by read APIs, browser storage, URLs, logs, or exports.
+Set `AI_BASE_URL`, `AI_API_KEY`, `AI_MODEL`, `AI_PROVIDER` (`openai`, `anthropic`, or `gemini`), and optionally `AI_TIMEOUT_MS` in `.env`, or configure the protocol, output token limit and temperature in Settings. All three text protocols support incremental SSE. DeepSeek, Qwen and OpenRouter are OpenAI-compatible URL presets, not separately verified integrations. Tests use protocol-specific local fixtures; no real provider account has been verified. Session keys are submitted only to the same-origin API and excluded from read APIs and exports.
+
+Settings also offers disk-staged NDJSON history import and streaming download (1 MiB per record, 2 GiB file limit). Compatibility JSON requests are limited to 8 MiB. Startup applies Alembic upgrades automatically; old workspace JSON is retained as a migration-time backup. Read [architecture and current scaling limits](docs/architecture.md) before migrating a large workspace. Private model hosts require the explicit server setting `AI_ALLOW_PRIVATE_HOSTS=true`; production still requires HTTPS.
 
 For production session credentials, set `DATA_ENCRYPTION_KEY` to a base64-encoded 32-byte key. Generate one with `npm run keys:generate`. In development, an unset key causes the API to generate an ephemeral process key; saved session credentials deliberately cannot be read after a restart. `AI_ALLOWED_HOSTS` optionally restricts user-configured provider hostnames.
 

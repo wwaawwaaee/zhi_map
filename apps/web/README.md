@@ -1,10 +1,14 @@
 # 知树 Web Client
 
-Vite TypeScript renders and interacts with snapshots from the Python FastAPI service. It contains view types only: no persistence, credentials, or domain transitions. `npm run dev:web` proxies API traffic to `http://127.0.0.1:8000`.
+React + Vite TypeScript renders server-paged views from Python FastAPI. It contains view types only: no durable persistence, credentials, or domain transitions. `npm run dev:web` proxies API traffic to `http://127.0.0.1:8000`.
 
 ## Frontend Architecture
 
-`apps/web` is a Vite TypeScript client. `main.ts` wires the page and interaction flows, `controller.ts` maintains the in-memory snapshot and revision, `api.ts` performs same-origin HTTP requests, `selection.ts` maps exact text selections, and `render.ts` renders the workspace. The static `index.html` provides the application shell.
+`main.tsx` mounts `components/AppShell.tsx` inside an error boundary. The shell composes `TopicNavigator`, `MessageViewport`, `Composer`, `SelectionDialog`, `ReferencesDialog`, `TopicSettings`, `ProviderSettings`, and `DataSettings`. `Dialog` uses native modal focus containment, Escape, focus restoration and asynchronous error handling. No imperative bootstrap or dialog templates remain. Sanitized Markdown/KaTeX and exact UTF-16 browser selection helpers remain isolated in `render.ts` / `selection.ts`.
+
+`hooks.ts` owns cancellable-effect query subscriptions. `controller.ts` owns an LRU entry-page cache (3 pages per branch, 8 total, 40 entries per page), the current branch metadata/page, serialized commands and debounced dirty drafts. Failed draft persistence prevents switching; conflicts retain drafts and refresh only the revision before retry. Run state is separate, capped at 3 concurrent runs; SSE requires started/runId/ordered seq, bounded buffers and rAF paints. Completion invalidates only affected entry caches and refreshes the active branch only if it is still the run's branch, preserving dirty drafts.
+
+Startup uses `/api/workspace/view`, branch metadata and cursor pages. Ordinary actions and SSE completion use compact revision/affected-ID results. Normal UI flows make zero `GET /api/workspace` requests. Topic search and reference-source discovery use server-paged metadata; message/context/reference lists replace pages instead of appending. All-background selection sends a scope plus at most 200 exclusions, never all message IDs; source references retain at most 100 selections across pages. Source jumps request the anchor's page directly before restoring exact UTF-16 selection. Each list has at most 40 entries; cache limits are counts, not a byte/RSS guarantee for arbitrary-size records.
 
 ## Development Entry
 
@@ -16,4 +20,6 @@ The client lets a learner create and organize topics, send prompts, expand an ex
 
 ## Data and API Dependency
 
-The client owns only its rendered, in-memory workspace snapshot and active request state. It does not persist learning data, session credentials, or authoritative revisions in browser storage. Every workspace mutation, import/export operation, model setting, and model request depends on FastAPI. Python Pydantic models validate HTTP payloads and `backend/app/domain` defines state semantics.
+The client owns bounded pages, metadata, drafts and run state. It does not persist learning data, session credentials, or authoritative revisions in browser storage. Branch-delete undo keeps only an opaque token in memory; the server stores one bounded tombstone per owner for 10 minutes. Session-mainline deletion retains independent children and has no undo. Every workspace mutation, transfer, model setting and model request depends on FastAPI.
+
+NDJSON downloads use the browser download manager. Uploads pass the selected `File` directly to `fetch` without `file.text()`; browser-managed buffering is implementation-dependent. The UI reports upload/validation/completion phases, not byte-level progress. The server stages incrementally. Legacy JSON import remains available below the 8 MiB request cap.

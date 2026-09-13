@@ -63,3 +63,8 @@ JS 依赖有变动时先跑 `npm install`——`build.ps1` 只跑 `npm run build
 桌面版使用持久化 WebView2 配置目录 `browser-profile` 保存会话身份。旧版遗留的零字节主密钥，仅在确认数据库没有保存模型凭据时自动恢复；非空损坏密钥或已有凭据时会提示从备份恢复。
 
 Windows 回归测试：`py -m pytest desktop/tests -q`（调用真实 DPAPI）。发布 ZIP 验证：`py desktop/tests/packaged_smoke.py --parent <已存在的临时目录> --zip desktop/dist/Zhishu-windows-x64.zip`，需要测试环境安装 Playwright、Pillow、pywin32；它校验 ZIP 和解压文件哈希，在中文空格路径中运行 EXE，清理开发环境变量和 PATH，在仓库外放置干扰 `.env`，使用隔离 LOCALAPPDATA。通过临时 `ZHISHU_WEBVIEW_DEBUG_PORT` 连接实际 WebView2，保存原生窗口截图，验证创建主题、模型密钥加密保存、关闭重开后的身份和数据持久化，并检查原生 DLL 加载路径。真实用户数据仅作只读完整性/哈希检查，不启动其配置。结果在临时目录 `evidence.json`，不调用真实模型服务。正常运行不启用调试端口。
+## Streaming/history build notes
+
+The frozen package includes `app.providers`, runtime Alembic modules and migration scripts. Startup upgrades the isolated desktop SQLite database; DPAPI key loading and the existing Inno Setup release pipeline are retained. The normalized migration leaves legacy JSON as a migration-time backup; preserve the database plus `master-key.dpapi` for full recovery.
+
+For an isolated packaged WebView2 test: install `backend[desktop-test]`, then run `py desktop/tests/packaged_smoke.py --parent <existing-temp-directory> --zip <release-zip>`. It verifies actual WebView2 UI, API readiness, encrypted settings and identity/history across two launches. Real-profile inspection is opt-in via `--inspect-existing`.

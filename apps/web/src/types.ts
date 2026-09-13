@@ -3,5 +3,7 @@ export type Range = { start: number; end: number };
 export type Selection = Range & { entryId: string; text: string };
 export type Entry = { id: string; kind: 'message' | 'reference'; role: Role; text: string; inherited: boolean; simulated: boolean; createdAt: string; source: { sessionId: string; sessionTitle: string; branchId: string; branchTitle: string; messageId: string }; range?: Range };
 export type Branch = { id: string; sessionId: string; title: string; tags: string[]; parent: null | { branchId: string; branchTitle: string; entryId: string }; kept: boolean; draft: string; entries: Entry[]; selection?: Selection; pendingPrompt?: string; awaiting?: boolean; metadataDone?: boolean };
+export type BranchMeta = Omit<Branch, 'entries'>;
+export type TopicMeta = Pick<Branch, 'id' | 'sessionId' | 'title' | 'tags' | 'parent' | 'kept'>;
 export type State = { version: 2; sessions: { id: string; title: string }[]; branches: Branch[]; active: string | null };
 export type Action = { type: string; branchId?: string; [key: string]: unknown };

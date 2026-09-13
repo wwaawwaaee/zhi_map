@@ -49,7 +49,9 @@ py -m uvicorn app.main:app --app-dir backend --host 0.0.0.0 --port 8000
 
 ## 设置模型
 
-可以在 `.env` 中设置 `AI_BASE_URL`、`AI_API_KEY`、`AI_MODEL` 与可选的 `AI_TIMEOUT_MS`，作为服务端默认模型；也可以在界面的“设置与数据”中，为当前匿名会话填写 OpenAI 兼容服务。会话密钥只会提交给同源 API，不会出现在读取接口、浏览器存储、URL、日志或导出文件中。
+可以在 `.env` 设置 `AI_BASE_URL`、`AI_API_KEY`、`AI_MODEL`、`AI_PROVIDER`（`openai`、`anthropic`、`gemini`）与可选的 `AI_TIMEOUT_MS`；也可以在“设置与数据”选择协议、最大输出 token 和 temperature。三种文本协议均接入增量 SSE。DeepSeek、Qwen、OpenRouter 是 OpenAI 协议地址预设，未逐家验证。测试使用不同协议的本地模拟服务，尚未用真实厂商账号验证。密钥只提交给同源 API，不包含在读取接口和导出文件中。
+
+大型历史可使用 NDJSON 流式下载与磁盘暂存导入：单条记录 ≤ 1 MiB，文件 ≤ 2 GiB；旧 JSON 请求限制为 8 MiB。启动自动执行 Alembic 升级，原工作区 JSON 保留为迁移时备份。迁移较大工作区前请阅读[架构与当前扩展限制](docs/architecture.zh-CN.md)。私有模型地址须由服务端显式设置 `AI_ALLOW_PRIVATE_HOSTS=true`，生产模式仍要求 HTTPS。
 
 生产环境若允许保存会话模型凭据，必须设置 `DATA_ENCRYPTION_KEY`，它是 32 字节密钥的 base64 编码。开发环境未设置该项时，API 会生成只在当前进程有效的临时密钥，所以重启后已保存的会话凭据无法读取。可用 `AI_ALLOWED_HOSTS` 限制用户可配置的模型服务主机名。
 

@@ -9,6 +9,6 @@ def utf16_slice(value: str, start: int, end: int | None = None) -> str:
     if start < 0 or end < start or end > len(units) // 2:
         raise ValueError("UTF-16 range is invalid")
     try:
-        return units[start * 2:end * 2].decode("utf-16-le")
+        return units[start * 2 : end * 2].decode("utf-16-le")
     except UnicodeDecodeError as error:
         raise ValueError("UTF-16 range splits a surrogate pair") from error

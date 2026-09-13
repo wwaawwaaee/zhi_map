@@ -19,7 +19,9 @@ export function readSelection(selection: globalThis.Selection, container: Elemen
 }
 
 export function restoreSelection(body: HTMLElement, start: number, end: number) {
-  body.replaceChildren(document.createTextNode(body.dataset.source!)); body.classList.add('raw-source');
-  const node = body.firstChild!; const range = document.createRange(); range.setStart(node, start); range.setEnd(node, end);
+  const span = document.createElement('span'); span.dataset.sourceStart = '0'; span.textContent = body.dataset.source!;
+  body.replaceChildren(span); body.classList.add('raw-source');
+  if (start < 0 || end < start || end > span.textContent.length) throw new Error('原文范围已失效。');
+  const node = span.firstChild!; const range = document.createRange(); range.setStart(node, start); range.setEnd(node, end);
   const selection = window.getSelection()!; selection.removeAllRanges(); selection.addRange(range);
 }

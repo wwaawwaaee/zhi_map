@@ -85,7 +85,10 @@ def verify_native_error(exe, directory, environment):
         else:
             raise AssertionError("No native error dialog")
         ImageGrab.grab(bbox=win32gui.GetWindowRect(hwnd)).save(directory / "native-error.png")
-        win32gui.PostMessage(hwnd, win32con.WM_COMMAND, win32con.IDOK, 0)
+        buttons = []
+        win32gui.EnumChildWindows(hwnd, lambda child, _: buttons.append(child) if win32gui.GetClassName(child).lower() == "button" else None, None)
+        assert buttons, "Native error confirmation is missing"
+        win32gui.PostMessage(buttons[0], win32con.BM_CLICK, 0, 0)
         assert process.wait(timeout=20) == 1
         assert key.read_bytes() == b"isolated-corrupt-key"
         assert "Desktop startup failed" in (app / "logs/desktop.log").read_text(encoding="utf-8")
@@ -100,9 +103,10 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--parent", type=Path, required=True)
     parser.add_argument("--zip", type=Path)
+    parser.add_argument("--inspect-existing", action="store_true", help="Opt in to read-only inspection of the real desktop profile")
     args = parser.parse_args()
     assert args.parent.is_dir()
-    user_hashes, user_report = inspect_existing_state()
+    user_hashes, user_report = inspect_existing_state() if args.inspect_existing else ({}, {"skipped": True})
     directory = Path(tempfile.mkdtemp(prefix="zhishu-packaged-", dir=args.parent))
     # An unrelated launch directory must not supply backend configuration.
     (directory / ".env").write_text("AI_TIMEOUT_MS=not-an-integer\nDATABASE_URL=not-a-database\n", encoding="utf-8")
@@ -186,9 +190,27 @@ def main():
                         page.locator("#save-ai-config").click()
                     assert saved.value.status == 200
                     page.wait_for_load_state("networkidle")
+                    page.locator("#close-modal").click()
+                    with page.expect_response(lambda r: '/api/workspace/actions' in r.url and r.request.method == 'POST' and r.request.post_data_json.get('type') == 'draft') as draft_saved:
+                        page.locator("#draft").fill("打包持久化 😀 draft")
+                    assert draft_saved.value.status == 200
+                    # Exercise lazy-imported transfer modules and final SQL copy in
+                    # the frozen binary, not the development Python interpreter.
+                    transfer = page.evaluate("""async () => {
+                        const v = await (await fetch('/api/workspace/view')).json();
+                        const response = await fetch('/api/export/ndjson');
+                        if (!response.ok) throw Error('Packaged export failed');
+                        const text = await response.text();
+                        if (!text.includes('打包持久化 😀 draft')) throw Error('Draft missing from packaged export');
+                        const imported = await fetch('/api/import/ndjson?revision=' + v.revision, {method: 'POST', headers: {'content-type': 'application/x-ndjson'}, body: text});
+                        return {status: imported.status, result: await imported.json()};
+                    }""")
+                    assert transfer["status"] == 200 and transfer["result"]["counts"]["branch"] == 1
+                    page.reload(wait_until="networkidle")
                 else:
                     assert cookie["value"] == previous_cookie, "Session changed across app restart"
                     page.locator("#chat-header h1").filter(has_text="新的学习问题").wait_for()
+                    assert page.locator("#draft").input_value() == "打包持久化 😀 draft"
                 workspace = page.evaluate("fetch('/api/workspace').then(r=>r.json())")
                 config = page.evaluate("fetch('/api/ai/config').then(r=>r.json())")
                 assert config["configured"] and config["model"] == "desktop-persistence-test"
@@ -199,6 +221,8 @@ def main():
                     assert workspace == previous_workspace
                     assert blob == previous_key
                 with sqlite3.connect(appdata / "zhishu.db") as db:
+                    assert db.execute("SELECT version_num FROM alembic_version").fetchone()[0] == "0004_delete_tombstones"
+                    assert db.execute("PRAGMA quick_check").fetchone()[0] == "ok"
                     row = db.execute("SELECT user_id,version,encrypted_key,nonce,auth_tag FROM user_ai_configs").fetchone()
                     plaintext = AESGCM(key).decrypt(base64.b64decode(row[3]), base64.b64decode(row[2]) + base64.b64decode(row[4]), f"{row[0]}:{row[1]}".encode())
                     assert plaintext == b"sk-desktop-isolated-test-not-a-real-key"
@@ -223,12 +247,16 @@ def main():
                     process.wait(timeout=10)
                 if browser:
                     browser.close()
-                assert inspect_existing_state()[0] == user_hashes, "Real user data changed during isolated test"
-                evidence["existing_state_unchanged"] = True
+                if args.inspect_existing:
+                    assert inspect_existing_state()[0] == user_hashes, "Real user data changed during isolated test"
+                evidence["real_profile_accessed"] = args.inspect_existing
+                if args.inspect_existing:
+                    evidence["existing_state_unchanged"] = True
                 (directory / "evidence.json").write_text(json.dumps(evidence, ensure_ascii=False, indent=2), encoding="utf-8")
     verify_native_error(exe, directory, environment)
     evidence["native_error_dialog_verified"] = True
-    assert inspect_existing_state()[0] == user_hashes
+    if args.inspect_existing:
+        assert inspect_existing_state()[0] == user_hashes
     (directory / "evidence.json").write_text(json.dumps(evidence, ensure_ascii=False, indent=2), encoding="utf-8")
     print(json.dumps({k: v for k, v in evidence.items() if k != "file_hashes"}, ensure_ascii=False, indent=2))
 
